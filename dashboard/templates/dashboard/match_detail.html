@@ -1,0 +1,184 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}WinPulse - Match Detail{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'dashboard/css/match_detail.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container detail-page" data-match-id="{{ match_id }}">
+
+  <!-- Back link -->
+  <a href="/" class="back-link fade-up">← All Matches</a>
+
+  <div class="detail-grid" id="detail-grid">
+
+    <!-- ── Scoreboard card ── -->
+    <div class="scoreboard-card fade-up" id="scoreboard-card" data-accent="blue">
+      <div class="accent-stripe"></div>
+      <div class="scoreboard-body">
+
+        <!-- Bowling team -->
+        <div class="team-block">
+          <div class="tb-label">BOWLING</div>
+          <div class="tb-name"  id="team-bowling-name">—</div>
+          <div class="tb-score" id="bowling-score">—</div>
+          <div class="tb-overs" id="bowling-detail">—</div>
+          <div class="tb-winpct"      id="bowling-win-pct">—%</div>
+          <div class="tb-winpct-label">WIN PROBABILITY</div>
+        </div>
+
+        <!-- Center -->
+        <div class="scoreboard-center">
+          <div class="vs-label">VS</div>
+          <div class="center-divider"></div>
+          <div class="overs-display" id="center-overs">—</div>
+        </div>
+
+        <!-- Batting team -->
+        <div class="team-block right">
+          <div class="tb-label">BATTING</div>
+          <div class="tb-name"  id="team-batting-name">—</div>
+          <div class="tb-score" id="batting-score">—</div>
+          <div class="tb-overs" id="batting-detail">—</div>
+          <div class="tb-winpct"      id="batting-win-pct">—%</div>
+          <div class="tb-winpct-label">WIN PROBABILITY</div>
+        </div>
+
+      </div>
+
+      <!-- Win probability bar -->
+      <div class="prob-section">
+        <div class="prob-header">
+          <span class="prob-header-label">WIN PROBABILITY</span>
+          <span class="prob-pct-display" id="prob-display">—</span>
+        </div>
+        <div class="prob-track">
+          <div class="prob-fill" id="prob-bar" style="width:50%;"></div>
+        </div>
+        <div class="prob-team-labels">
+          <span class="prob-team-label" id="prob-left-label">—</span>
+          <span class="prob-team-label" id="prob-right-label">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Stats row ── -->
+    <div class="stats-card fade-up" id="stats-card">
+      <div class="stat-cell">
+        <div class="stat-val" id="stat-target">—</div>
+        <div class="stat-lbl">Target</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-val" id="stat-needed">—</div>
+        <div class="stat-lbl">Runs Needed</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-val" id="stat-balls">—</div>
+        <div class="stat-lbl">Balls Left</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-val good" id="stat-crr">—</div>
+        <div class="stat-lbl">CRR</div>
+        <div class="stat-minibar">
+          <div class="stat-minibar-fill" id="crr-bar" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-val" id="stat-rrr">—</div>
+        <div class="stat-lbl">RRR</div>
+      </div>
+    </div>
+
+    <!-- ── Over progress + Ball timeline ── -->
+    <div class="two-col">
+
+      <!-- Over progress -->
+      <div class="over-card fade-up">
+        <div class="section-label">Over Progress</div>
+        <div class="over-dots-grid" id="over-dots"></div>
+        <div class="over-footer" id="over-footer">— of 20 overs complete</div>
+      </div>
+
+      <!-- Ball timeline -->
+      <div class="ball-card fade-up">
+        <div class="section-label">This Over</div>
+        <div class="ball-row" id="ball-row"></div>
+        <div class="ball-footer" id="ball-footer">Waiting for ball data...</div>
+      </div>
+
+    </div>
+
+    <!-- ── Commentary ── -->
+    <div class="commentary-card fade-up" id="commentary-card">
+      <div class="section-label">Commentary</div>
+      <p class="commentary-text" id="commentary-text">Loading match data...</p>
+    </div>
+
+    <!-- ── Players scorecard ── -->
+    <div class="scorecard-card fade-up" id="scorecard-card">
+
+      <!-- Tabs -->
+      <div class="scorecard-tabs">
+        <button class="scorecard-tab active" data-tab="batting"  onclick="switchTab('batting')">Batting</button>
+        <button class="scorecard-tab"        data-tab="bowling"  onclick="switchTab('bowling')">Bowling</button>
+      </div>
+
+      <!-- Batting table -->
+      <div id="tab-batting" class="scorecard-table-wrap">
+        <table class="scorecard-table">
+          <thead>
+            <tr>
+              <th>Batter</th>
+              <th class="num">R</th>
+              <th class="num">B</th>
+              <th class="num">4s</th>
+              <th class="num">6s</th>
+              <th class="num">SR</th>
+            </tr>
+          </thead>
+          <tbody id="batting-tbody">
+            <tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:20px; font-family:var(--font-mono); font-size:0.7rem;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Bowling table -->
+      <div id="tab-bowling" class="scorecard-table-wrap" style="display:none;">
+        <table class="scorecard-table">
+          <thead>
+            <tr>
+              <th>Bowler</th>
+              <th class="num">O</th>
+              <th class="num">R</th>
+              <th class="num">W</th>
+              <th class="num">ECO</th>
+            </tr>
+          </thead>
+          <tbody id="bowling-tbody">
+            <tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:20px; font-family:var(--font-mono); font-size:0.7rem;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- Status bar -->
+    <div class="detail-status-bar fade-up">
+      <span class="status-text" id="last-updated">Fetching data...</span>
+      <span class="status-text" id="next-poll">—</span>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+  <script>
+    // Pass match_id from Django to JS
+    const MATCH_ID = "{{ match_id }}";
+  </script>
+  <script src="{% static 'dashboard/js/detail.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,286 @@
+/* ── WinPulse — base.css ────────────────────────────────────────────────────
+   Shared variables, resets, typography, and common components
+   ─────────────────────────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;800;900&family=Barlow:wght@300;400;500;600&family=DM+Mono:wght@300;400;500&display=swap');
+
+/* ── Design tokens ──────────────────────────────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --bg-base:          #07090d;
+  --bg-card:          #0d1117;
+  --bg-elevated:      #131920;
+  --bg-hover:         #161e27;
+
+  /* Borders */
+  --border:           rgba(255, 255, 255, 0.055);
+  --border-accent:    rgba(255, 255, 255, 0.11);
+  --border-hover:     rgba(255, 255, 255, 0.18);
+
+  /* Accent colours */
+  --accent-amber:     #f59e0b;
+  --accent-amber-dim: rgba(245, 158, 11, 0.12);
+  --accent-red:       #ef4444;
+  --accent-red-dim:   rgba(239, 68, 68, 0.12);
+  --accent-blue:      #3b82f6;
+  --accent-blue-dim:  rgba(59, 130, 246, 0.12);
+  --accent-purple:    #a855f7;
+  --accent-purple-dim:rgba(168, 85, 247, 0.12);
+  --accent-green:     #10b981;
+  --accent-green-dim: rgba(16, 185, 129, 0.12);
+
+  /* Text */
+  --text-primary:     #eef2f7;
+  --text-secondary:   #7a8fa6;
+  --text-muted:       #3d5166;
+
+  /* Fonts */
+  --font-display:     'Barlow Condensed', sans-serif;
+  --font-body:        'Barlow', sans-serif;
+  --font-mono:        'DM Mono', monospace;
+
+  /* Radius */
+  --radius-sm:        6px;
+  --radius-md:        10px;
+  --radius-lg:        14px;
+  --radius-xl:        20px;
+
+  /* Shadows */
+  --shadow-card:      0 1px 3px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.3);
+  --shadow-glow-amber:  0 0 24px rgba(245,158,11,0.15);
+  --shadow-glow-red:    0 0 24px rgba(239,68,68,0.15);
+  --shadow-glow-blue:   0 0 24px rgba(59,130,246,0.15);
+  --shadow-glow-purple: 0 0 24px rgba(168,85,247,0.15);
+}
+
+/* ── Reset ───────────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ── Background texture ──────────────────────────────────────────────────────── */
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(59, 130, 246, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.018) 1px, transparent 1px);
+  background-size: 52px 52px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-glow-top {
+  position: fixed;
+  top: -250px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 900px;
+  height: 500px;
+  background: radial-gradient(ellipse, rgba(59, 130, 246, 0.07) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Layout ──────────────────────────────────────────────────────────────────── */
+.page-content {
+  position: relative;
+  z-index: 1;
+}
+
+.container {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  border-bottom: 1px solid var(--border);
+  background: rgba(7, 9, 13, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+}
+
+.logo {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.35rem;
+  letter-spacing: 0.06em;
+  color: var(--text-primary);
+}
+
+.logo-accent { color: var(--accent-blue); }
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── Badges ──────────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.badge-live {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: var(--accent-red);
+}
+
+.badge-mock {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  color: var(--accent-amber);
+}
+
+.badge-upcoming {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  color: var(--accent-green);
+}
+
+.badge-completed {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border-accent);
+  color: var(--text-secondary);
+}
+
+/* Tournament type badges */
+.badge-ipl    { background: var(--accent-amber-dim);  border: 1px solid rgba(245,158,11,0.2);  color: var(--accent-amber);  }
+.badge-india  { background: var(--accent-blue-dim);   border: 1px solid rgba(59,130,246,0.2);  color: var(--accent-blue);   }
+.badge-icc    { background: var(--accent-purple-dim); border: 1px solid rgba(168,85,247,0.2);  color: var(--accent-purple); }
+.badge-rcb    { background: var(--accent-red-dim);    border: 1px solid rgba(239,68,68,0.2);   color: var(--accent-red);    }
+
+/* Live dot */
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-red);
+  animation: blink 1.4s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+/* ── Card ────────────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.018) 0%, transparent 55%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ── Section label ───────────────────────────────────────────────────────────── */
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+/* ── Accent theming ──────────────────────────────────────────────────────────── */
+[data-accent="amber"] { --current-accent: var(--accent-amber); --current-accent-dim: var(--accent-amber-dim); --current-glow: var(--shadow-glow-amber); }
+[data-accent="red"]   { --current-accent: var(--accent-red);   --current-accent-dim: var(--accent-red-dim);   --current-glow: var(--shadow-glow-red);   }
+[data-accent="blue"]  { --current-accent: var(--accent-blue);  --current-accent-dim: var(--accent-blue-dim);  --current-glow: var(--shadow-glow-blue);  }
+[data-accent="purple"]{ --current-accent: var(--accent-purple);--current-accent-dim: var(--accent-purple-dim);--current-glow: var(--shadow-glow-purple);}
+
+/* ── Animations ──────────────────────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes updateFlash {
+  0%   { box-shadow: var(--shadow-card); }
+  40%  { box-shadow: 0 0 0 2px rgba(59,130,246,0.2), var(--shadow-card); }
+  100% { box-shadow: var(--shadow-card); }
+}
+
+.fade-up { animation: fadeUp 0.45s ease forwards; }
+.flash   { animation: updateFlash 0.5s ease; }
+
+/* Staggered children */
+.stagger > *:nth-child(1) { animation-delay: 0.04s; }
+.stagger > *:nth-child(2) { animation-delay: 0.09s; }
+.stagger > *:nth-child(3) { animation-delay: 0.14s; }
+.stagger > *:nth-child(4) { animation-delay: 0.19s; }
+.stagger > *:nth-child(5) { animation-delay: 0.24s; }
+.stagger > *:nth-child(6) { animation-delay: 0.29s; }
+
+/* ── Status bar ──────────────────────────────────────────────────────────────── */
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2px;
+  margin-top: 4px;
+}
+
+.status-text {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-accent); border-radius: 99px; }

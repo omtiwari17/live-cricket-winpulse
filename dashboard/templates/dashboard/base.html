@@ -1,0 +1,54 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}WinPulse — Live Cricket{% endblock %}</title>
+
+  <!-- Base styles -->
+  <link rel="stylesheet" href="{% static 'dashboard/css/base.css' %}">
+
+  <!-- Page-specific styles -->
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+  <!-- Background effects -->
+  <div class="bg-grid"></div>
+  <div class="bg-glow-top"></div>
+
+  <div class="page-content">
+
+    <!-- ── Site header ── -->
+    <header class="site-header">
+      <div class="container">
+        <div class="header-inner">
+
+          <a href="/" class="logo">WIN<span class="logo-accent">PULSE</span></a>
+
+          <div class="header-right">
+            <span class="badge badge-mock" id="mock-indicator" style="display:none;">
+              MOCK DATA
+            </span>
+            <div class="badge badge-live">
+              <div class="live-dot"></div>
+              LIVE
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </header>
+
+    <!-- ── Page content ── -->
+    <main>
+      {% block content %}{% endblock %}
+    </main>
+
+  </div>
+
+  {% block extra_js %}{% endblock %}
+
+</body>
+</html>

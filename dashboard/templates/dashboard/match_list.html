@@ -1,0 +1,91 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}WinPulse - Live Cricket Scores{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'dashboard/css/match_list.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container list-page">
+
+  <!-- Page heading -->
+  <div class="fade-up">
+    <h1 class="page-title">Live Scores</h1>
+    <p class="page-subtitle">IPL · World Cup · India Matches — Updated Live</p>
+  </div>
+
+  <!-- ── Filter bar ── -->
+  <div class="filter-bar fade-up">
+
+    <!-- Status filters -->
+    <div class="filter-group">
+      <span class="filter-group-label">Show</span>
+      <button class="filter-btn filter-active" data-status-filter="all">All</button>
+      <button class="filter-btn" data-status-filter="live">🔴 Live</button>
+      <button class="filter-btn" data-status-filter="upcoming">Upcoming</button>
+      <button class="filter-btn" data-status-filter="completed">Results</button>
+    </div>
+
+    <!-- Tournament filters -->
+    <div class="filter-group">
+      <span class="filter-group-label">Tournament</span>
+      <button class="filter-btn filter-active" data-tournament-filter="all">All</button>
+      <button class="filter-btn" data-tournament-filter="ipl">IPL</button>
+      <button class="filter-btn" data-tournament-filter="india">India</button>
+      <button class="filter-btn" data-tournament-filter="icc">World Cup</button>
+    </div>
+
+  </div>
+
+  <!-- ── LIVE NOW section ── -->
+  <section class="match-section" id="section-live">
+    <div class="match-section-header">
+      <div class="badge badge-live">
+        <div class="live-dot"></div>
+        LIVE NOW
+      </div>
+      <span class="match-section-count" id="live-count">—</span>
+    </div>
+    <div class="match-grid stagger" id="live-grid">
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
+    </div>
+  </section>
+
+  <!-- ── UPCOMING section ── -->
+  <section class="match-section" id="section-upcoming">
+    <div class="match-section-header">
+      <div class="badge badge-upcoming">UPCOMING</div>
+      <span class="match-section-count" id="upcoming-count">—</span>
+    </div>
+    <div class="match-grid stagger" id="upcoming-grid">
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
+    </div>
+  </section>
+
+  <!-- ── COMPLETED section ── -->
+  <section class="match-section" id="section-completed">
+    <div class="match-section-header">
+      <div class="badge badge-completed">RESULTS</div>
+      <span class="match-section-count" id="completed-count">—</span>
+    </div>
+    <div class="match-grid stagger" id="completed-grid">
+      <div class="skeleton skeleton-card"></div>
+    </div>
+  </section>
+
+  <!-- Status bar -->
+  <div class="status-bar fade-up">
+    <span class="status-text" id="last-updated">Fetching data...</span>
+    <span class="status-text" id="next-poll">—</span>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'dashboard/js/list.js' %}"></script>
+{% endblock %}
