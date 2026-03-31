@@ -1,0 +1,36 @@
+name: Django CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
+    - name: Run Django checks
+      env:
+        SECRET_KEY: 'ci-test-secret-key-not-real'
+        DEBUG: 'True'
+        CRICKET_API_KEY_1: 'dummy'
+      run: python manage.py check
+
+    - name: Run tests
+      env:
+        SECRET_KEY: 'ci-test-secret-key-not-real'
+        DEBUG: 'True'
+        CRICKET_API_KEY_1: 'dummy'
+      run: python manage.py test
