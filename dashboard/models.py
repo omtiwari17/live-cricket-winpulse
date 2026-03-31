@@ -17,3 +17,5 @@ class Match(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        verbose_name        = 'Match'
+        verbose_name_plural = 'Matches'
