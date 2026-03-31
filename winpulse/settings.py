@@ -72,6 +72,7 @@ CRICKET_API_KEYS = [
     env('CRICKET_API_KEY_1', default=''),
     env('CRICKET_API_KEY_2', default=''),
     env('CRICKET_API_KEY_3', default=''),
+    env('CRICKET_API_KEY_4', default=''),
 ]
 
 # Remove empty keys if not all accounts created yet
