@@ -121,16 +121,25 @@ function updateScoreboard(data) {
     setText('batting-win-pct',  `${batProb}%`);
     setText('bowling-win-pct',  `${bowlProb}%`);
     setText('prob-display',     `${batProb}% — ${bowlProb}%`);
-    setText('prob-left-label',  data.team_bowling || data.team_b || '—');
-    setText('prob-right-label', data.team_batting || data.team_a || '—');
+    setText('prob-left-label',  data.team_bowling || '—');
+    setText('prob-right-label', data.team_batting || '—');
     const bar = document.getElementById('prob-bar');
     if (bar) bar.style.width = `${batProb}%`;
+  } else if (data.first_innings) {
+      // First innings — show score projection message
+      setText('batting-win-pct', '1st INN');
+      setText('bowling-win-pct', 'BOWLING');
+      setText('prob-display',    'Win probability available in 2nd innings');
+      setText('prob-left-label', data.team_bowling || '—');
+      setText('prob-right-label',data.team_batting || '—');
+      const bar = document.getElementById('prob-bar');
+      if (bar) bar.style.width = '50%';
   } else {
-    setText('batting-win-pct', '—');
-    setText('bowling-win-pct', '—');
-    setText('prob-display',    data.result || 'Match ended');
-    const bar = document.getElementById('prob-bar');
-    if (bar) bar.style.width = '50%';
+      setText('batting-win-pct', '—');
+      setText('bowling-win-pct', '—');
+      setText('prob-display',    data.result || 'Match ended');
+      const bar = document.getElementById('prob-bar');
+      if (bar) bar.style.width = '50%';
   }
 }
 

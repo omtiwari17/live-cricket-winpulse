@@ -327,25 +327,202 @@ def get_match_accent(match):
     return "purple"
 
 
-def get_all_matches(use_mock=True):
+def _clean_team_name(raw):
+    """Remove bracket shortcode — 'Gujarat Titans [GT]' → 'Gujarat Titans'"""
+    if '[' in raw:
+        return raw[:raw.index('[')].strip()
+    return raw.strip()
+
+def _clean_team_short(raw):
+    """Extract shortcode — 'Gujarat Titans [GT]' → 'GT'"""
+    if '[' in raw and ']' in raw:
+        return raw[raw.index('[')+1:raw.index(']')]
+    return raw[:3].upper()
+
+def _detect_tournament(series):
+    """Detect tournament type from series name."""
+    s = series.lower()
+    if 'indian premier league' in s or 'ipl' in s:
+        return TOURNAMENT_IPL
+    if 't20 world cup' in s:
+        return TOURNAMENT_T20_WC
+    if 'odi world cup' in s or 'cricket world cup' in s:
+        return TOURNAMENT_ODI_WC
+    if 'champions trophy' in s:
+        return TOURNAMENT_CT
+    if 'world test championship' in s or 'wtc' in s:
+        return TOURNAMENT_WTC
+    if 'india' in s:
+        # Check if it's a bilateral India series
+        match_type = s
+        if 'test' in match_type:
+            return TOURNAMENT_INDIA_TEST
+        if 'odi' in match_type:
+            return TOURNAMENT_INDIA_ODI
+        return TOURNAMENT_INDIA_T20
+    return None   # not a tournament we track
+
+def _parse_real_match(raw):
+    """Parse a single match from real CricAPI response."""
+    team_a_raw = raw.get('t1', '')
+    team_b_raw = raw.get('t2', '')
+    series     = raw.get('series', '')
+    ms         = raw.get('ms', '')       # 'live', 'fixture', 'result'
+    t1s        = raw.get('t1s', '')      # team 1 score e.g. '28/0 (2.3)'
+    t2s        = raw.get('t2s', '')
+
+    team_a       = _clean_team_name(team_a_raw)
+    team_b       = _clean_team_name(team_b_raw)
+    team_a_short = _clean_team_short(team_a_raw)
+    team_b_short = _clean_team_short(team_b_raw)
+
+    # Map ms to our status
+    if ms == 'live':
+        status = 'live'
+    elif ms == 'result':
+        status = 'completed'
+    else:
+        status = 'upcoming'
+
+    match = {
+        'match_id':     raw.get('id', ''),
+        'tournament':   _detect_tournament(series) or series,
+        'series':       series,
+        'status':       status,
+        'team_a':       team_a,
+        'team_a_short': team_a_short,
+        'team_b':       team_b,
+        'team_b_short': team_b_short,
+        'venue':        '',
+        'is_mock':      False,
+    }
+
+    if status == 'live':
+        # Determine who is batting based on which score exists
+        if t1s and t2s:
+            # Both have scores — second innings, t2 is batting
+            match['team_batting']  = team_b
+            match['team_bowling']  = team_a
+            score_str = t2s
+            target_str = t1s
+            t_runs, t_wkts, t_overs, t_balls = _parse_score_string(target_str)
+            match['target'] = t_runs + 1
+        elif t1s:
+            # Only t1 has score — t1 is batting, first innings
+            match['team_batting']  = team_a
+            match['team_bowling']  = team_b
+            score_str = t1s
+            match['target'] = 0
+        elif t2s:
+            # Only t2 has score — t2 is batting
+            match['team_batting']  = team_b
+            match['team_bowling']  = team_a
+            score_str = t2s
+            match['target'] = 0
+        else:
+            match['team_batting']  = team_a
+            match['team_bowling']  = team_b
+            score_str = ''
+            match['target'] = 0
+
+        runs, wickets, overs, balls = _parse_score_string(score_str)
+        match['score']        = runs
+        match['wickets']      = wickets
+        match['overs']        = overs
+        match['balls_bowled'] = balls
+        match['crr']          = round((runs / balls * 6), 2) if balls > 0 else 0
+        match['rrr']          = round(((match['target'] - runs) / max(120 - balls, 1) * 6), 2) if match['target'] > 0 else 0
+        match['commentary']   = raw.get('status', '')
+        match['ball_history'] = []
+        match['batting_players']  = []
+        match['bowling_players']  = []
+    return match
+
+
+def _parse_score_string(score_str):
+    """
+    Parse '28/0 (2.3)' into (runs, wickets, overs, balls_bowled)
+    Returns (0, 0, '0.0', 0) if parsing fails.
+    """
+    try:
+        if not score_str:
+            return 0, 0, '0.0', 0
+
+        # Split score and overs
+        parts = score_str.strip().split(' ')
+        score_part = parts[0]   # '28/0'
+        overs_part = parts[1].strip('()') if len(parts) > 1 else '0.0'  # '2.3'
+
+        runs, wickets = score_part.split('/')
+        runs    = int(runs)
+        wickets = int(wickets)
+
+        # Convert overs to balls
+        over_parts   = overs_part.split('.')
+        full_overs   = int(over_parts[0])
+        extra_balls  = int(over_parts[1]) if len(over_parts) > 1 else 0
+        balls_bowled = full_overs * 6 + extra_balls
+
+        return runs, wickets, overs_part, balls_bowled
+
+    except Exception:
+        return 0, 0, '0.0', 0
+
+
+def _format_match_time(dt_str):
+    """Format ISO datetime string to readable time."""
+    try:
+        from datetime import datetime, timezone, timedelta
+        dt  = datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
+        ist = dt + timedelta(hours=5, minutes=30)
+        return ist.strftime('%b %d, %I:%M %p IST')
+    except Exception:
+        return dt_str
+
+
+def get_all_matches(use_mock=False):
+    """Return all matches grouped by status."""
     if use_mock:
         live      = [m for m in MOCK_MATCHES if m["status"] == "live"]
         upcoming  = [m for m in MOCK_MATCHES if m["status"] == "upcoming"]
         completed = [m for m in MOCK_MATCHES if m["status"] == "completed"]
-
-        # Attach accent to every match before sending to frontend
         for m in live + upcoming + completed:
             m["accent"] = get_match_accent(m)
-
         return {"live": live, "upcoming": upcoming, "completed": completed}
 
     data = _make_request("cricScore")
     if not data:
         return get_all_matches(use_mock=True)
-    return get_all_matches(use_mock=True)
+
+    raw_matches = data.get('data', [])
+
+    live, upcoming, completed = [], [], []
+
+    for raw in raw_matches:
+        tournament = _detect_tournament(raw.get('series', ''))
+
+        # Only include IPL and India/ICC matches we care about
+        if tournament is None:
+            continue
+
+        match = _parse_real_match(raw)
+
+        if match['status'] == 'live':
+            live.append(match)
+        elif match['status'] == 'upcoming':
+            upcoming.append(match)
+        else:
+            completed.append(match)
+
+    # If nothing found fall back to mock
+    if not live and not upcoming and not completed:
+        return get_all_matches(use_mock=True)
+
+    return {"live": live, "upcoming": upcoming, "completed": completed}
 
 
-def get_match_by_id(match_id, use_mock=True):
+def get_match_by_id(match_id, use_mock=False):
+    """Return single match by ID — tries real API first."""
     if use_mock:
         for match in MOCK_MATCHES:
             if match["match_id"] == match_id:
@@ -353,10 +530,18 @@ def get_match_by_id(match_id, use_mock=True):
                 return match
         return None
 
+    # Check mock first in case it's a mock ID
+    for match in MOCK_MATCHES:
+        if match["match_id"] == match_id:
+            match["accent"] = get_match_accent(match)
+            return match
+
+    # Real API — get full match info
     data = _make_request("match_info", params={"id": match_id})
-    if not data:
+    if not data or not data.get('data'):
         return None
-    return data
+
+    return _parse_real_match(data['data'])
 
 
 # Legacy — kept for compatibility
