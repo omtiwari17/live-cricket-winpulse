@@ -29,10 +29,10 @@
   --accent-green:     #10b981;
   --accent-green-dim: rgba(16, 185, 129, 0.12);
 
-  /* Text */
+  /* Text — bumped up muted/secondary for readability */
   --text-primary:     #eef2f7;
-  --text-secondary:   #7a8fa6;
-  --text-muted:       #3d5166;
+  --text-secondary:   #94a3b8;   /* was #7a8fa6 — now more visible */
+  --text-muted:       #64748b;   /* was #3d5166 — now more visible */
 
   /* Fonts */
   --font-display:     'Barlow Condensed', sans-serif;
@@ -156,9 +156,9 @@ a {
   padding: 3px 10px;
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 0.65rem;
+  font-size: 0.68rem;        /* was 0.65 — slightly bigger */
   font-weight: 500;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;    /* was 0.1 — slightly less cramped */
   text-transform: uppercase;
 }
 
@@ -186,7 +186,6 @@ a {
   color: var(--text-secondary);
 }
 
-/* Tournament type badges */
 .badge-ipl    { background: var(--accent-amber-dim);  border: 1px solid rgba(245,158,11,0.2);  color: var(--accent-amber);  }
 .badge-india  { background: var(--accent-blue-dim);   border: 1px solid rgba(59,130,246,0.2);  color: var(--accent-blue);   }
 .badge-icc    { background: var(--accent-purple-dim); border: 1px solid rgba(168,85,247,0.2);  color: var(--accent-purple); }
@@ -225,13 +224,14 @@ a {
   border-radius: inherit;
 }
 
-/* ── Section label ───────────────────────────────────────────────────────────── */
+/* ── Section label — fixed readability ───────────────────────────────────────── */
 .section-label {
   font-family: var(--font-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.16em;
+  font-size: 0.68rem;        /* was 0.62 — now readable */
+  font-weight: 500;          /* added weight */
+  letter-spacing: 0.12em;    /* was 0.16 — less cramped */
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-secondary); /* was text-muted — now more visible */
   margin-bottom: 16px;
 }
 
@@ -256,7 +256,6 @@ a {
 .fade-up { animation: fadeUp 0.45s ease forwards; }
 .flash   { animation: updateFlash 0.5s ease; }
 
-/* Staggered children */
 .stagger > *:nth-child(1) { animation-delay: 0.04s; }
 .stagger > *:nth-child(2) { animation-delay: 0.09s; }
 .stagger > *:nth-child(3) { animation-delay: 0.14s; }
@@ -275,8 +274,9 @@ a {
 
 .status-text {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
-  color: var(--text-muted);
+  font-size: 0.72rem;        /* was 0.68 — more readable */
+  font-weight: 400;
+  color: var(--text-secondary); /* was text-muted */
   letter-spacing: 0.04em;
 }
 

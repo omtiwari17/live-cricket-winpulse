@@ -12,15 +12,16 @@
   align-items: center;
   gap: 6px;
   font-family: var(--font-mono);
-  font-size: 0.68rem;
-  color: var(--text-muted);
+  font-size: 0.72rem;        /* was 0.68 */
+  font-weight: 500;          /* added */
+  color: var(--text-secondary); /* was text-muted */
   letter-spacing: 0.08em;
   text-transform: uppercase;
   margin-bottom: 20px;
   transition: color 0.2s;
 }
 
-.back-link:hover { color: var(--text-secondary); }
+.back-link:hover { color: var(--text-primary); }
 
 .detail-grid {
   display: grid;
@@ -38,7 +39,6 @@
   transition: box-shadow 0.4s ease;
 }
 
-/* Top accent stripe */
 .scoreboard-card .accent-stripe {
   height: 3px;
   background: linear-gradient(90deg, var(--current-accent, var(--accent-blue)), transparent);
@@ -59,11 +59,25 @@
 
 .tb-label {
   font-family: var(--font-mono);
-  font-size: 0.6rem;
-  letter-spacing: 0.14em;
+  font-size: 0.68rem;        /* was 0.6 */
+  font-weight: 500;          /* added */
+  letter-spacing: 0.1em;     /* was 0.14 */
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-secondary); /* was text-muted */
   margin-bottom: 10px;
+}
+
+.team-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  margin-bottom: 8px;
+  display: none;             /* shown by JS when URL available */
+}
+
+.team-block.right .team-logo {
+  margin-left: auto;
+  display: none;
 }
 
 .tb-name {
@@ -87,8 +101,9 @@
 
 .tb-overs {
   font-family: var(--font-mono);
-  font-size: 0.72rem;
-  color: var(--text-muted);
+  font-size: 0.75rem;        /* was 0.72 */
+  font-weight: 400;
+  color: var(--text-secondary); /* was text-muted */
   margin-top: 6px;
   letter-spacing: 0.06em;
 }
@@ -104,9 +119,10 @@
 
 .tb-winpct-label {
   font-family: var(--font-mono);
-  font-size: 0.58rem;
-  color: var(--text-muted);
-  letter-spacing: 0.1em;
+  font-size: 0.65rem;        /* was 0.58 */
+  font-weight: 500;          /* added */
+  color: var(--text-secondary); /* was text-muted */
+  letter-spacing: 0.08em;    /* was 0.1 */
   margin-top: 2px;
 }
 
@@ -138,8 +154,9 @@
 
 .overs-display {
   font-family: var(--font-mono);
-  font-size: 0.62rem;
-  color: var(--text-muted);
+  font-size: 0.68rem;        /* was 0.62 */
+  font-weight: 500;          /* added */
+  color: var(--text-secondary); /* was text-muted */
   letter-spacing: 0.1em;
   white-space: nowrap;
 }
@@ -158,16 +175,17 @@
 
 .prob-header-label {
   font-family: var(--font-mono);
-  font-size: 0.6rem;
-  color: var(--text-muted);
-  letter-spacing: 0.14em;
+  font-size: 0.68rem;        /* was 0.6 */
+  font-weight: 500;          /* added */
+  color: var(--text-secondary); /* was text-muted */
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .prob-pct-display {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.88rem;        /* was 0.85 */
   color: var(--text-secondary);
   letter-spacing: 0.06em;
 }
@@ -206,9 +224,10 @@
 
 .prob-team-label {
   font-family: var(--font-mono);
-  font-size: 0.6rem;
-  color: var(--text-muted);
-  letter-spacing: 0.06em;
+  font-size: 0.68rem;        /* was 0.6 */
+  font-weight: 400;
+  color: var(--text-secondary); /* was text-muted */
+  letter-spacing: 0.04em;
 }
 
 /* ── Stats row ───────────────────────────────────────────────────────────────── */
@@ -239,15 +258,16 @@
   transition: color 0.4s;
 }
 
-.stat-val.good { color: var(--accent-green); }
-.stat-val.warn { color: var(--accent-amber); }
-.stat-val.danger{ color: var(--accent-red); }
+.stat-val.good   { color: var(--accent-green); }
+.stat-val.warn   { color: var(--accent-amber); }
+.stat-val.danger { color: var(--accent-red);   }
 
 .stat-lbl {
   font-family: var(--font-mono);
-  font-size: 0.58rem;
-  color: var(--text-muted);
-  letter-spacing: 0.12em;
+  font-size: 0.65rem;        /* was 0.58 */
+  font-weight: 500;          /* added */
+  color: var(--text-secondary); /* was text-muted */
+  letter-spacing: 0.08em;    /* was 0.12 */
   text-transform: uppercase;
   margin-top: 5px;
 }
@@ -265,13 +285,6 @@
   border-radius: 99px;
   background: var(--accent-green);
   transition: width 0.8s ease;
-}
-
-/* ── Two column grid ─────────────────────────────────────────────────────────── */
-.two-col {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
 }
 
 /* ── Over progress ───────────────────────────────────────────────────────────── */
@@ -303,56 +316,9 @@
 
 .over-footer {
   font-family: var(--font-mono);
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  margin-top: 14px;
-  letter-spacing: 0.04em;
-}
-
-/* ── Ball timeline ───────────────────────────────────────────────────────────── */
-.ball-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 22px;
-  box-shadow: var(--shadow-card);
-}
-
-.ball-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.ball-chip {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 0.82rem;
-  border: 1px solid var(--border-accent);
-  background: var(--bg-elevated);
-  color: var(--text-muted);
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
-
-.ball-chip.b-dot    { color: var(--text-muted); }
-.ball-chip.b-run    { color: var(--text-primary); border-color: var(--border-accent); }
-.ball-chip.b-four   { background: var(--accent-blue-dim);   border-color: var(--accent-blue);   color: var(--accent-blue); }
-.ball-chip.b-six    { background: var(--accent-amber-dim);  border-color: var(--accent-amber);  color: var(--accent-amber); }
-.ball-chip.b-wicket { background: var(--accent-red-dim);    border-color: var(--accent-red);    color: var(--accent-red); }
-.ball-chip.b-empty  { opacity: 0.18; }
-
-.ball-footer {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  color: var(--text-muted);
+  font-size: 0.7rem;         /* was 0.65 */
+  font-weight: 400;
+  color: var(--text-secondary); /* was text-muted */
   margin-top: 14px;
   letter-spacing: 0.04em;
 }
@@ -367,7 +333,8 @@
 }
 
 .commentary-text {
-  font-size: 0.88rem;
+  font-size: 0.9rem;         /* was 0.88 */
+  font-weight: 400;
   color: var(--text-secondary);
   line-height: 1.65;
   font-style: italic;
@@ -375,115 +342,30 @@
   border-left: 2px solid var(--current-accent, var(--accent-blue));
 }
 
-/* ── Players scorecard ───────────────────────────────────────────────────────── */
-.scorecard-card {
+/* ── Venue info ──────────────────────────────────────────────────────────────── */
+.venue-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  padding: 16px 22px;
   box-shadow: var(--shadow-card);
-}
-
-.scorecard-tabs {
   display: flex;
-  border-bottom: 1px solid var(--border);
+  align-items: center;
+  gap: 10px;
 }
 
-.scorecard-tab {
-  flex: 1;
-  padding: 12px 16px;
+.venue-icon {
+  font-size: 1rem;
+  opacity: 0.5;
+}
+
+.venue-text {
   font-family: var(--font-mono);
-  font-size: 0.65rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  text-align: center;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: color 0.2s, border-color 0.2s;
-  background: transparent;
-  border-top: none;
-  border-left: none;
-  border-right: none;
-}
-
-.scorecard-tab.active {
-  color: var(--current-accent, var(--accent-blue));
-  border-bottom-color: var(--current-accent, var(--accent-blue));
-}
-
-.scorecard-tab:hover:not(.active) { color: var(--text-secondary); }
-
-.scorecard-table-wrap { overflow-x: auto; }
-
-.scorecard-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.82rem;
-}
-
-.scorecard-table thead tr {
-  border-bottom: 1px solid var(--border);
-}
-
-.scorecard-table th {
-  font-family: var(--font-mono);
-  font-size: 0.58rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  padding: 10px 16px;
-  text-align: left;
+  font-size: 0.75rem;        /* was 0.7 */
   font-weight: 400;
-}
-
-.scorecard-table th.num { text-align: right; }
-
-.scorecard-table td {
-  padding: 11px 16px;
-  border-bottom: 1px solid var(--border);
   color: var(--text-secondary);
-  vertical-align: middle;
+  letter-spacing: 0.04em;
 }
-
-.scorecard-table td.num {
-  text-align: right;
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  color: var(--text-primary);
-}
-
-.scorecard-table tbody tr:last-child td { border-bottom: none; }
-
-.scorecard-table tbody tr:hover td { background: var(--bg-elevated); }
-
-.player-name {
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.player-status {
-  font-family: var(--font-mono);
-  font-size: 0.6rem;
-  color: var(--text-muted);
-  margin-top: 2px;
-  letter-spacing: 0.06em;
-}
-
-.batting-indicator {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent-green);
-  margin-right: 6px;
-  box-shadow: 0 0 5px rgba(16,185,129,0.5);
-  animation: blink 1.4s infinite;
-}
-
-.sr-good  { color: var(--accent-green) !important; }
-.sr-ok    { color: var(--accent-amber) !important; }
-.sr-low   { color: var(--text-muted) !important; }
 
 /* ── Status bar ──────────────────────────────────────────────────────────────── */
 .detail-status-bar {

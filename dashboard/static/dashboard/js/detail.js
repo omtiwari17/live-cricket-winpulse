@@ -9,7 +9,7 @@ const POLL_BREAK    = 60000;
 let pollTimer       = null;
 let countdownTimer  = null;
 let currentInterval = POLL_NORMAL;
-let countdown       = 60;
+let countdown       = 30;
 let lastBalls       = -1;
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
@@ -70,9 +70,8 @@ function updateAll(data) {
   updateScoreboard(data);
   updateStats(data);
   updateOverDots(data);
-  updateBallTimeline(data);
   updateCommentary(data);
-  updateScorecard(data);
+  updateVenue(data);
 
   const mockEl = document.getElementById('mock-indicator');
   if (mockEl) mockEl.style.display = data.is_mock ? 'inline-flex' : 'none';
@@ -80,14 +79,11 @@ function updateAll(data) {
   setText('last-updated', `Updated ${new Date().toLocaleTimeString()}`);
   flashEl('scoreboard-card');
   flashEl('stats-card');
-  // Set team logos
-  setLogo('team-bowling-logo', data.team_b_logo || '');
-  setLogo('team-batting-logo', data.team_a_logo || '');
 }
 
 // ── Accent ────────────────────────────────────────────────────────────────────
 function applyAccent(accent) {
-  ['scoreboard-card', 'commentary-card', 'scorecard-card'].forEach(id => {
+  ['scoreboard-card', 'commentary-card'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.setAttribute('data-accent', accent);
   });
@@ -95,22 +91,34 @@ function applyAccent(accent) {
 
 // ── Scoreboard ────────────────────────────────────────────────────────────────
 function updateScoreboard(data) {
-  const isLive   = data.status === 'live';
-  const score    = data.score    ?? 0;
-  const wickets  = data.wickets  ?? 0;
-  const overs    = data.overs    || '0.0';
-  const target   = data.target   || 0;
-  const batProb  = data.batting_win_prob;
-  const bowlProb = data.bowling_win_prob;
+  const isLive      = data.status === 'live';
+  const score       = data.score    ?? 0;
+  const wickets     = data.wickets  ?? 0;
+  const overs       = data.overs    || '0.0';
+  const target      = data.target   || 0;
+  const batProb     = data.batting_win_prob;
+  const bowlProb    = data.bowling_win_prob;
+  const firstInnings = data.first_innings || false;
 
+  // Team names
   setText('team-batting-name', data.team_batting || data.team_a || '—');
   setText('team-bowling-name', data.team_bowling || data.team_b || '—');
 
+  // Team logos
+  setLogo('team-batting-logo', data.team_a_logo || data.team_batting_logo || '');
+  setLogo('team-bowling-logo', data.team_b_logo || data.team_bowling_logo || '');
+
+  // Scores
   if (isLive) {
     setText('batting-score',  `${score}/${wickets}`);
     setText('batting-detail', `${overs} OV`);
-    setText('bowling-score',  target > 0 ? String(target) : '—');
-    setText('bowling-detail', target > 0 ? 'TARGET' : 'BOWLING');
+    if (target > 0) {
+      setText('bowling-score',  String(target));
+      setText('bowling-detail', 'TARGET');
+    } else {
+      setText('bowling-score',  '1st INN');
+      setText('bowling-detail', 'BOWLING');
+    }
   } else {
     setText('batting-score',  data.team_a_score || '—');
     setText('batting-detail', '');
@@ -120,29 +128,31 @@ function updateScoreboard(data) {
 
   setText('center-overs', `${overs} OV`);
 
+  // Win probability
   if (batProb !== null && batProb !== undefined) {
     setText('batting-win-pct',  `${batProb}%`);
     setText('bowling-win-pct',  `${bowlProb}%`);
     setText('prob-display',     `${batProb}% — ${bowlProb}%`);
-    setText('prob-left-label',  data.team_bowling || '—');
-    setText('prob-right-label', data.team_batting || '—');
+    setText('prob-left-label',  data.team_bowling || data.team_b || '—');
+    setText('prob-right-label', data.team_batting || data.team_a || '—');
     const bar = document.getElementById('prob-bar');
     if (bar) bar.style.width = `${batProb}%`;
-  } else if (data.first_innings) {
-      // First innings — show score projection message
-      setText('batting-win-pct', '1st INN');
-      setText('bowling-win-pct', 'BOWLING');
-      setText('prob-display',    'Win probability available in 2nd innings');
-      setText('prob-left-label', data.team_bowling || '—');
-      setText('prob-right-label',data.team_batting || '—');
-      const bar = document.getElementById('prob-bar');
-      if (bar) bar.style.width = '50%';
+
+  } else if (firstInnings) {
+    setText('batting-win-pct',  '1st INN');
+    setText('bowling-win-pct',  'BOWLING');
+    setText('prob-display',     'Available after 1st innings');
+    setText('prob-left-label',  data.team_bowling || data.team_b || '—');
+    setText('prob-right-label', data.team_batting || data.team_a || '—');
+    const bar = document.getElementById('prob-bar');
+    if (bar) bar.style.width = '50%';
+
   } else {
-      setText('batting-win-pct', '—');
-      setText('bowling-win-pct', '—');
-      setText('prob-display',    data.result || 'Match ended');
-      const bar = document.getElementById('prob-bar');
-      if (bar) bar.style.width = '50%';
+    setText('batting-win-pct', '—');
+    setText('bowling-win-pct', '—');
+    setText('prob-display',    data.result || 'Match ended');
+    const bar = document.getElementById('prob-bar');
+    if (bar) bar.style.width = '50%';
   }
 }
 
@@ -156,17 +166,19 @@ function updateStats(data) {
   const ballsLeft = Math.max(0, 120 - balls);
   const needed    = Math.max(0, target - score);
 
-  setText('stat-target', target > 0 ? target : '—');
+  setText('stat-target', target > 0 ? target : '1st INN');
   setText('stat-needed', target > 0 ? needed  : '—');
-  setText('stat-balls',  ballsLeft);
-  setText('stat-crr',    crr.toFixed(2));
-  setText('stat-rrr',    rrr.toFixed(2));
+  setText('stat-balls',  ballsLeft > 0 ? ballsLeft : '—');
+  setText('stat-crr',    crr > 0 ? crr.toFixed(2) : '—');
+  setText('stat-rrr',    rrr > 0 ? rrr.toFixed(2) : '—');
 
+  // RRR color
   const rrrEl = document.getElementById('stat-rrr');
-  if (rrrEl) {
+  if (rrrEl && rrr > 0) {
     rrrEl.className = 'stat-val ' + (rrr > 12 ? 'danger' : rrr > 9 ? 'warn' : 'good');
   }
 
+  // CRR minibar
   const crrBar = document.getElementById('crr-bar');
   if (crrBar) crrBar.style.width = `${Math.min(100, (crr / 12) * 100)}%`;
 }
@@ -192,137 +204,27 @@ function updateOverDots(data) {
     container.appendChild(dot);
   }
 
-  setText('over-footer', `${oversCompleted} of ${totalOvers} overs complete · ${ballsThisOver} ball(s) this over`);
-}
-
-// ── Ball timeline ─────────────────────────────────────────────────────────────
-function updateBallTimeline(data) {
-  const row    = document.getElementById('ball-row');
-  const footer = document.getElementById('ball-footer');
-  if (!row) return;
-
-  const history = data.ball_history || [];
-  row.innerHTML = '';
-
-  let overRuns    = 0;
-  let overWickets = 0;
-
-  history.forEach(ball => {
-    const chip = document.createElement('div');
-    const isW  = ball === 'W' || ball === 'w';
-    const val  = parseInt(ball);
-
-    let cls = 'ball-chip ';
-    if (isW)            { cls += 'b-wicket'; overWickets++; }
-    else if (val === 0) { cls += 'b-dot'; }
-    else if (val === 4) { cls += 'b-four'; overRuns += 4; }
-    else if (val === 6) { cls += 'b-six';  overRuns += 6; }
-    else                { cls += 'b-run';  overRuns += val; }
-
-    chip.className   = cls;
-    chip.textContent = isW ? 'W' : (val === 0 ? '•' : val);
-    row.appendChild(chip);
-  });
-
-  for (let i = history.length; i < 6; i++) {
-    const chip = document.createElement('div');
-    chip.className   = 'ball-chip b-empty';
-    chip.textContent = '—';
-    row.appendChild(chip);
-  }
-
-  if (footer) {
-    footer.textContent = history.length
-      ? `This over: ${overRuns} run${overRuns !== 1 ? 's' : ''} · ${overWickets} wicket${overWickets !== 1 ? 's' : ''}`
-      : 'Over not started yet';
-  }
+  setText('over-footer',
+    `${oversCompleted} of ${totalOvers} overs complete · ${ballsThisOver} ball(s) this over`
+  );
 }
 
 // ── Commentary ────────────────────────────────────────────────────────────────
 function updateCommentary(data) {
-  setText('commentary-text', data.commentary || data.result || 'No commentary available.');
+  const text = data.commentary || data.result || data.status || 'No commentary available.';
+  setText('commentary-text', text);
 }
 
-// ── Scorecard ─────────────────────────────────────────────────────────────────
-function updateScorecard(data) {
-  updateBattingTable(data.batting_players || []);
-  updateBowlingTable(data.bowling_players || []);
-}
-
-function updateBattingTable(players) {
-  const tbody = document.getElementById('batting-tbody');
-  
-  if (!tbody) return;
-
-  if (!players.length) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="6" style="text-align:center; padding:24px; 
-            font-family:var(--font-mono); font-size:0.7rem; 
-            color:var(--text-muted);">
-          Player data requires paid API plan
-        </td>
-      </tr>`;
+// ── Venue ─────────────────────────────────────────────────────────────────────
+function updateVenue(data) {
+  const venue = data.venue || '';
+  const el    = document.getElementById('venue-card');
+  if (!venue && el) {
+    el.style.display = 'none';
     return;
   }
-
-  tbody.innerHTML = players.map(p => {
-    const isBatting = p.status === 'batting';
-    const srClass   = p.sr >= 150 ? 'sr-good' : p.sr >= 100 ? 'sr-ok' : 'sr-low';
-    return `
-      <tr>
-        <td>
-          <div class="player-name">
-            ${isBatting ? '<span class="batting-indicator"></span>' : ''}${p.name}
-          </div>
-          <div class="player-status">${isBatting ? 'Batting' : p.status || '—'}</div>
-        </td>
-        <td class="num" style="font-weight:700;font-size:0.92rem;">${p.runs ?? '—'}</td>
-        <td class="num">${p.balls ?? '—'}</td>
-        <td class="num">${p.fours ?? '—'}</td>
-        <td class="num">${p.sixes ?? '—'}</td>
-        <td class="num ${srClass}">${p.sr != null ? p.sr.toFixed(1) : '—'}</td>
-      </tr>`;
-  }).join('');
-}
-
-function updateBowlingTable(players) {
-  const tbody = document.getElementById('bowling-tbody');
-  
-  if (!tbody) return;
-
-  if (!players.length) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="5" style="text-align:center; padding:24px; 
-            font-family:var(--font-mono); font-size:0.7rem; 
-            color:var(--text-muted);">
-          Player data requires paid API plan
-        </td>
-      </tr>`;
-    return;
-  }
-  
-  tbody.innerHTML = players.map(p => {
-    const ecoClass = p.economy <= 7 ? 'sr-good' : p.economy <= 9 ? 'sr-ok' : 'sr-low';
-    return `
-      <tr>
-        <td><div class="player-name">${p.name}</div></td>
-        <td class="num">${p.overs   ?? '—'}</td>
-        <td class="num">${p.runs    ?? '—'}</td>
-        <td class="num" style="font-weight:700;">${p.wickets ?? '—'}</td>
-        <td class="num ${ecoClass}">${p.economy != null ? p.economy.toFixed(2) : '—'}</td>
-      </tr>`;
-  }).join('');
-}
-
-// ── Tab switching ─────────────────────────────────────────────────────────────
-function switchTab(tab) {
-  document.querySelectorAll('.scorecard-tab').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.tab === tab);
-  });
-  document.getElementById('tab-batting').style.display = tab === 'batting' ? 'block' : 'none';
-  document.getElementById('tab-bowling').style.display = tab === 'bowling' ? 'block' : 'none';
+  if (el) el.style.display = 'flex';
+  setText('venue-text', venue);
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -331,21 +233,21 @@ function setText(id, value) {
   if (el) el.textContent = value;
 }
 
+function setLogo(id, url) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (url) {
+    el.src          = url;
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
 function flashEl(id) {
   const el = document.getElementById(id);
   if (!el) return;
   el.classList.remove('flash');
   void el.offsetWidth;
   el.classList.add('flash');
-}
-
-function setLogo(id, url) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  if (url) {
-    el.src = url;
-    el.style.display = 'block';
-  } else {
-    el.style.display = 'none';
-  }
 }
