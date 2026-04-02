@@ -21,7 +21,7 @@ def api_matches(request):
 
 
 def api_match_detail(request, match_id):
-    match = get_match_by_id(match_id, use_mock=False)
+    match = get_match_by_id(match_id, use_mock=True)
 
     if not match:
         raise Http404("Match not found")

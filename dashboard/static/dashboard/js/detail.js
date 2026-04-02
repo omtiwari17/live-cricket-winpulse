@@ -2,14 +2,14 @@
 'use strict';
 
 const API_BASE      = '/api/match/';
-const POLL_ACTIVE   = 5000;
-const POLL_NORMAL   = 15000;
-const POLL_BREAK    = 30000;
+const POLL_ACTIVE   = 15000;
+const POLL_NORMAL   = 30000;
+const POLL_BREAK    = 60000;
 
 let pollTimer       = null;
 let countdownTimer  = null;
 let currentInterval = POLL_NORMAL;
-let countdown       = 15;
+let countdown       = 60;
 let lastBalls       = -1;
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
@@ -80,6 +80,9 @@ function updateAll(data) {
   setText('last-updated', `Updated ${new Date().toLocaleTimeString()}`);
   flashEl('scoreboard-card');
   flashEl('stats-card');
+  // Set team logos
+  setLogo('team-bowling-logo', data.team_b_logo || '');
+  setLogo('team-batting-logo', data.team_a_logo || '');
 }
 
 // ── Accent ────────────────────────────────────────────────────────────────────
@@ -248,7 +251,20 @@ function updateScorecard(data) {
 
 function updateBattingTable(players) {
   const tbody = document.getElementById('batting-tbody');
-  if (!tbody || !players.length) return;
+  
+  if (!tbody) return;
+
+  if (!players.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align:center; padding:24px; 
+            font-family:var(--font-mono); font-size:0.7rem; 
+            color:var(--text-muted);">
+          Player data requires paid API plan
+        </td>
+      </tr>`;
+    return;
+  }
 
   tbody.innerHTML = players.map(p => {
     const isBatting = p.status === 'batting';
@@ -272,8 +288,21 @@ function updateBattingTable(players) {
 
 function updateBowlingTable(players) {
   const tbody = document.getElementById('bowling-tbody');
-  if (!tbody || !players.length) return;
+  
+  if (!tbody) return;
 
+  if (!players.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" style="text-align:center; padding:24px; 
+            font-family:var(--font-mono); font-size:0.7rem; 
+            color:var(--text-muted);">
+          Player data requires paid API plan
+        </td>
+      </tr>`;
+    return;
+  }
+  
   tbody.innerHTML = players.map(p => {
     const ecoClass = p.economy <= 7 ? 'sr-good' : p.economy <= 9 ? 'sr-ok' : 'sr-low';
     return `
@@ -308,4 +337,15 @@ function flashEl(id) {
   el.classList.remove('flash');
   void el.offsetWidth;
   el.classList.add('flash');
+}
+
+function setLogo(id, url) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (url) {
+    el.src = url;
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
 }

@@ -436,6 +436,21 @@ def _parse_real_match(raw):
         match['ball_history'] = []
         match['batting_players']  = []
         match['bowling_players']  = []
+    
+    # Parse team logos from teamInfo
+    team_info = raw.get('teamInfo', [])
+    logos = {}
+    for ti in team_info:
+        logos[ti.get('name', '')] = ti.get('img', '')
+
+    match['team_a_logo'] = logos.get(team_a, '')
+    match['team_b_logo'] = logos.get(team_b, '')
+
+    # Also grab from top level t1img/t2img if available (cricScore response)
+    if not match['team_a_logo']:
+        match['team_a_logo'] = raw.get('t1img', '')
+    if not match['team_b_logo']:
+        match['team_b_logo'] = raw.get('t2img', '')
     return match
 
 
@@ -522,27 +537,66 @@ def get_all_matches(use_mock=False):
 
 
 def get_match_by_id(match_id, use_mock=False):
-    """Return single match by ID — tries real API first."""
-    if use_mock:
-        for match in MOCK_MATCHES:
-            if match["match_id"] == match_id:
-                match["accent"] = get_match_accent(match)
-                return match
-        return None
-
-    # Check mock first in case it's a mock ID
+    # Check mock IDs first
     for match in MOCK_MATCHES:
         if match["match_id"] == match_id:
             match["accent"] = get_match_accent(match)
             return match
 
-    # Real API — get full match info
-    data = _make_request("match_info", params={"id": match_id})
-    if not data or not data.get('data'):
+    if use_mock:
         return None
 
-    return _parse_real_match(data['data'])
+    # Get detailed match info
+    info_data = _make_request("match_info", params={"id": match_id})
+    if not info_data or not info_data.get('data'):
+        return None
 
+    raw = info_data['data']
+
+    # Build a unified raw dict that _parse_real_match understands
+    # cricScore fields aren't in match_info so we reconstruct them
+    series = raw.get('name', '')
+    teams  = raw.get('teams', [])
+
+    team_info = raw.get('teamInfo', [])
+    logos = {ti['name']: ti.get('img', '') for ti in team_info}
+
+    # Determine status
+    if raw.get('matchEnded'):
+        ms = 'result'
+    elif raw.get('matchStarted'):
+        ms = 'live'
+    else:
+        ms = 'fixture'
+
+    # Get scores from score array if available
+    scores     = raw.get('score', [])
+    t1s        = ''
+    t2s        = ''
+    if scores:
+        t1s = f"{scores[0].get('r',0)}/{scores[0].get('w',0)} ({scores[0].get('o',0)})" if len(scores) > 0 else ''
+        t2s = f"{scores[1].get('r',0)}/{scores[1].get('w',0)} ({scores[1].get('o',0)})" if len(scores) > 1 else ''
+
+    reconstructed = {
+        'id':          match_id,
+        't1':          f"{teams[0]} [{team_info[0]['shortname']}]" if team_info else (teams[0] if teams else ''),
+        't2':          f"{teams[1]} [{team_info[1]['shortname']}]" if len(team_info) > 1 else (teams[1] if len(teams) > 1 else ''),
+        't1s':         t1s,
+        't2s':         t2s,
+        'ms':          ms,
+        'series':      series,
+        'status':      raw.get('status', ''),
+        'venue':       raw.get('venue', ''),
+        'dateTimeGMT': raw.get('dateTimeGMT', ''),
+        'teamInfo':    team_info,
+        't1img':       logos.get(teams[0], '') if teams else '',
+        't2img':       logos.get(teams[1], '') if len(teams) > 1 else '',
+    }
+
+    match = _parse_real_match(reconstructed)
+    match['venue'] = raw.get('venue', '')
+    return match
+    
 
 # Legacy — kept for compatibility
 MOCK_MATCH_DATA = MOCK_MATCHES[0]

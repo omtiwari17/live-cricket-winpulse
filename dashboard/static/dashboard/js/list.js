@@ -2,11 +2,11 @@
 'use strict';
 
 const API_URL       = '/api/matches/';
-const POLL_INTERVAL = 15000;
+const POLL_INTERVAL = 60000;
 
 let pollTimer      = null;
 let countdownTimer = null;
-let countdown      = 15;
+let countdown      = 60;
 let allMatches     = { live: [], upcoming: [], completed: [] };
 
 // Active filters
