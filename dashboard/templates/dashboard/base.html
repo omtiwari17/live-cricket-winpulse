@@ -4,23 +4,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>{% block title %}WinPulse — Live Cricket{% endblock %}</title>
+  <title>{% block title %}WinPulse - Live Cricket{% endblock %}</title>
 
-  <!-- Base styles -->
   <link rel="stylesheet" href="{% static 'dashboard/css/base.css' %}">
 
-  <!-- Page-specific styles -->
   {% block extra_css %}{% endblock %}
+
 </head>
 <body>
 
-  <!-- Background effects -->
   <div class="bg-grid"></div>
   <div class="bg-glow-top"></div>
 
   <div class="page-content">
 
-    <!-- ── Site header ── -->
     <header class="site-header">
       <div class="container">
         <div class="header-inner">
@@ -41,10 +38,20 @@
       </div>
     </header>
 
-    <!-- ── Page content ── -->
     <main>
       {% block content %}{% endblock %}
     </main>
+
+    <footer class="site-footer fade-up">
+      <div class="container">
+        <p>Built with <span class="footer-heart">♥</span> and 🏏 by <strong>Om Tiwari</strong></p>
+        <div class="footer-links">
+          <a href="https://omtiwari.tech" target="_blank" rel="noopener noreferrer">Portfolio</a>
+          <a href="https://github.com/omtiwari17" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://linkedin.com/in/tiwariom/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+        </div>
+      </div>
+    </footer>
 
   </div>
 

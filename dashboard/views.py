@@ -16,12 +16,12 @@ def match_detail(request, match_id):
 
 def api_matches(request):
     """Return all matches as JSON for the listing page."""
-    matches = get_all_matches(use_mock=True)
+    matches = get_all_matches(use_mock=False)
     return JsonResponse(matches)
 
 
 def api_match_detail(request, match_id):
-    match = get_match_by_id(match_id, use_mock=True)
+    match = get_match_by_id(match_id, use_mock=False)
 
     if not match:
         raise Http404("Match not found")
