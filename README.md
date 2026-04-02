@@ -212,7 +212,7 @@ Set `use_mock=True` while building to avoid burning real API calls. Switch to `F
 python manage.py test
 ```
 
-Tests cover the win probability algorithm — easy chase, tough chase, balanced position, match won, match lost.
+Tests cover the win probability algorithm easy chase, tough chase, balanced position, match won, match lost.
 
 ---
 
