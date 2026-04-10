@@ -2,9 +2,9 @@
 'use strict';
 
 const API_BASE      = '/api/match/';
-const POLL_ACTIVE   = 15000;
-const POLL_NORMAL   = 30000;
-const POLL_BREAK    = 60000;
+const POLL_ACTIVE   = 10000; // Faster polling when match is active and progressing
+const POLL_NORMAL   = 20000; // Regular polling when match is live but no recent progress (e.g. between overs)
+const POLL_BREAK    = 60000;  // Slow polling when match is not live (e.g. pre-match, breaks, or post-match)
 
 let pollTimer       = null;
 let countdownTimer  = null;
