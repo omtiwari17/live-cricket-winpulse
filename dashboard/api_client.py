@@ -1,5 +1,7 @@
 import requests
 from django.conf import settings
+from dashboard.algorithm import calculate_win_probability
+
 
 # ── Key rotation state ───────────────────────────────────────────────────────
 _current_key_index = 0
@@ -398,42 +400,94 @@ def _parse_real_match(raw):
     }
 
     if status == 'live':
-        # Determine who is batting based on which score exists
+        status_text = raw.get('status', '').lower()
+        team_a_lower = team_a.lower()
+        team_b_lower = team_b.lower()
+
+        # 1. Detect exactly who is batting from the toss text (Handles BOTH Bat & Bowl)
+        team_a_is_batting = any(phrase in status_text for phrase in [
+            f'{team_a_lower} opt to bat',
+            f'{team_a_lower} elected to bat',
+            f'{team_a_lower} chose to bat',
+            f'{team_b_lower} opt to bowl',
+            f'{team_b_lower} elected to field',
+            f'{team_b_lower} chose to field',
+        ])
+        
+        team_b_is_batting = any(phrase in status_text for phrase in [
+            f'{team_b_lower} opt to bat',
+            f'{team_b_lower} elected to bat',
+            f'{team_b_lower} chose to bat',
+            f'{team_a_lower} opt to bowl',
+            f'{team_a_lower} elected to field',
+            f'{team_a_lower} chose to field',
+        ])
+
+        # 2. Assign correctly based on innings
         if t1s and t2s:
-            # Both have scores — second innings, t2 is batting
-            match['team_batting']  = team_b
-            match['team_bowling']  = team_a
-            score_str = t2s
+            # Second Innings: The team batting is whoever DID NOT bat first
+            if team_a_is_batting:
+                match['team_batting'] = team_b
+                match['team_bowling'] = team_a
+            elif team_b_is_batting:
+                match['team_batting'] = team_a
+                match['team_bowling'] = team_b
+            else:
+                match['team_batting'] = team_b
+                match['team_bowling'] = team_a
+                
+            score_str  = t2s
             target_str = t1s
-            t_runs, t_wkts, t_overs, t_balls = _parse_score_string(target_str)
+            t_runs, _, _, _ = _parse_score_string(target_str)
             match['target'] = t_runs + 1
+
         elif t1s:
-            # Only t1 has score — t1 is batting, first innings
-            match['team_batting']  = team_a
-            match['team_bowling']  = team_b
-            score_str = t1s
-            match['target'] = 0
-        elif t2s:
-            # Only t2 has score — t2 is batting
-            match['team_batting']  = team_b
-            match['team_bowling']  = team_a
-            score_str = t2s
-            match['target'] = 0
-        else:
-            match['team_batting']  = team_a
-            match['team_bowling']  = team_b
-            score_str = ''
+            # First Innings
+            if team_b_is_batting:
+                match['team_batting'] = team_b
+                match['team_bowling'] = team_a
+            else:
+                match['team_batting'] = team_a
+                match['team_bowling'] = team_b
+                
+            score_str       = t1s
             match['target'] = 0
 
+        elif t2s:
+            # Rare API edge case where only t2 has a score
+            if team_a_is_batting:
+                match['team_batting'] = team_a
+                match['team_bowling'] = team_b
+            else:
+                match['team_batting'] = team_b
+                match['team_bowling'] = team_a
+                
+            score_str       = t2s
+            match['target'] = 0
+
+        else:
+            # Match about to start, no scores yet
+            match['team_batting'] = team_a
+            match['team_bowling'] = team_b
+            score_str       = ''
+            match['target'] = 0
+
+        # Grab logos
+        match['team_a_logo'] = raw.get('t1img', '')
+        match['team_b_logo'] = raw.get('t2img', '')
+
+        # Parse runs and calculate rates
         runs, wickets, overs, balls = _parse_score_string(score_str)
         match['score']        = runs
         match['wickets']      = wickets
         match['overs']        = overs
         match['balls_bowled'] = balls
         match['crr']          = round((runs / balls * 6), 2) if balls > 0 else 0
-        match['rrr']          = round(((match['target'] - runs) / max(120 - balls, 1) * 6), 2) if match['target'] > 0 else 0
-        match['commentary']   = raw.get('status', '')
-        match['ball_history'] = []
+        match['rrr']          = round(
+            ((match['target'] - runs) / max(120 - balls, 1) * 6), 2
+        ) if match['target'] > 0 else 0
+        match['commentary']       = raw.get('status', '')
+        match['ball_history']     = []
         match['batting_players']  = []
         match['bowling_players']  = []
     
@@ -496,7 +550,6 @@ def _format_match_time(dt_str):
 
 
 def get_all_matches(use_mock=False):
-    """Return all matches grouped by status."""
     if use_mock:
         live      = [m for m in MOCK_MATCHES if m["status"] == "live"]
         upcoming  = [m for m in MOCK_MATCHES if m["status"] == "upcoming"]
@@ -510,17 +563,33 @@ def get_all_matches(use_mock=False):
         return get_all_matches(use_mock=True)
 
     raw_matches = data.get('data', [])
-
     live, upcoming, completed = [], [], []
 
     for raw in raw_matches:
         tournament = _detect_tournament(raw.get('series', ''))
-
-        # Only include IPL and India/ICC matches we care about
         if tournament is None:
             continue
 
         match = _parse_real_match(raw)
+
+        # Attach win probability for live second innings
+        if match['status'] == 'live' and match.get('target', 0) > 0 and match.get('balls_bowled', 0) > 0:
+            try:
+                from dashboard.algorithm import calculate_win_probability
+                prob = calculate_win_probability(
+                    target=match['target'],
+                    runs=match['score'],
+                    wickets=match['wickets'],
+                    balls_bowled=match['balls_bowled'],
+                )
+                match['batting_win_prob'] = prob['batting_team']
+                match['bowling_win_prob'] = prob['bowling_team']
+            except Exception:
+                match['batting_win_prob'] = 50
+                match['bowling_win_prob'] = 50
+        else:
+            match['batting_win_prob'] = 50
+            match['bowling_win_prob'] = 50
 
         if match['status'] == 'live':
             live.append(match)
@@ -529,7 +598,6 @@ def get_all_matches(use_mock=False):
         else:
             completed.append(match)
 
-    # If nothing found fall back to mock
     if not live and not upcoming and not completed:
         return get_all_matches(use_mock=True)
 

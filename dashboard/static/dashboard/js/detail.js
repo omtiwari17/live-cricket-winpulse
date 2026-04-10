@@ -104,9 +104,21 @@ function updateScoreboard(data) {
   setText('team-batting-name', data.team_batting || data.team_a || '—');
   setText('team-bowling-name', data.team_bowling || data.team_b || '—');
 
-  // Team logos
-  setLogo('team-batting-logo', data.team_a_logo || data.team_batting_logo || '');
-  setLogo('team-bowling-logo', data.team_b_logo || data.team_bowling_logo || '');
+  // Logos — assign based on team names matching
+  const teamALogo  = data.team_a_logo || '';
+  const teamBLogo  = data.team_b_logo || '';
+  const battingName = data.team_batting || data.team_a || '';
+  const teamAName   = data.team_a || '';
+
+  if (battingName === teamAName) {
+      // team_a is batting (right side), team_b is bowling (left side)
+      setLogo('team-batting-logo', teamALogo);
+      setLogo('team-bowling-logo', teamBLogo);
+  } else {
+      // team_b is batting (right side), team_a is bowling (left side)
+      setLogo('team-batting-logo', teamBLogo);
+      setLogo('team-bowling-logo', teamALogo);
+  }
 
   // Scores
   if (isLive) {
@@ -136,7 +148,7 @@ function updateScoreboard(data) {
     setText('prob-left-label',  data.team_bowling || data.team_b || '—');
     setText('prob-right-label', data.team_batting || data.team_a || '—');
     const bar = document.getElementById('prob-bar');
-    if (bar) bar.style.width = `${batProb}%`;
+    if (bar) bar.style.width = `${bowlProb}%`;
 
   } else if (firstInnings) {
     setText('batting-win-pct',  '1st INN');
