@@ -54,9 +54,15 @@ def calculate_win_probability(target, runs, wickets, balls_bowled):
     if pressure_ratio > 2:      # need more than 2 runs per ball
         base -= (pressure_ratio - 2) * 10
 
-    # ── Clamp between 3 and 97 ───────────────────────────────────────
-    # Never show 0% or 100% unless match is actually over
-    batting_probability = round(min(97, max(3, base)), 1)
+    # Dynamic floor based on match situation
+    if rrr > 18:
+        floor = 1      # nearly impossible
+    elif rrr > 15:
+        floor = 2      # very difficult
+    else:
+        floor = 3      # standard floor
+
+    batting_probability = round(min(97, max(floor, base)), 1)
     bowling_probability = round(100 - batting_probability, 1)
 
     return {
