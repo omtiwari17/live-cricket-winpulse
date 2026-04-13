@@ -144,7 +144,7 @@ function updateScoreboard(data) {
   if (batProb !== null && batProb !== undefined) {
     setText('batting-win-pct',  `${batProb}%`);
     setText('bowling-win-pct',  `${bowlProb}%`);
-    setText('prob-display',     `${batProb}% — ${bowlProb}%`);
+    setText('prob-display', `${bowlProb}% — ${batProb}%`);
     setText('prob-left-label',  data.team_bowling || data.team_b || '—');
     setText('prob-right-label', data.team_batting || data.team_a || '—');
     const bar = document.getElementById('prob-bar');
