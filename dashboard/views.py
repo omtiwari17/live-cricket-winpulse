@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import JsonResponse, Http404
 from .api_client import get_all_matches, get_match_by_id
-from .algorithm import calculate_win_probability
+from .algorithm import calculate_win_probability, get_format_overs
 
 
 def match_list(request):
@@ -26,6 +26,10 @@ def api_match_detail(request, match_id):
     if not match:
         raise Http404("Match not found")
 
+    total_overs = match.get('total_overs') or get_format_overs(match.get('tournament', ''), match.get('series', ''))
+    match['total_overs'] = total_overs
+    match['total_balls'] = total_overs * 6
+
     if match.get('status') == 'live':
         target = match.get('target', 0)
         runs   = match.get('score', 0)
@@ -39,6 +43,8 @@ def api_match_detail(request, match_id):
                 runs=runs,
                 wickets=wickets,
                 balls_bowled=balls,
+                total_overs=total_overs,
+                first_innings=False,
             )
             match['batting_win_prob'] = probability['batting_team']
             match['bowling_win_prob'] = probability['bowling_team']

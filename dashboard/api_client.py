@@ -1,6 +1,6 @@
 import requests
 from django.conf import settings
-from dashboard.algorithm import calculate_win_probability
+from dashboard.algorithm import calculate_win_probability, get_format_overs
 
 
 # ── Key rotation state ───────────────────────────────────────────────────────
@@ -379,9 +379,13 @@ def _parse_real_match(raw):
 
     status = 'live' if ms == 'live' else ('completed' if ms == 'result' else 'upcoming')
 
+    tournament = _detect_tournament(series) or series
+    total_overs = get_format_overs(tournament, series)
+    total_balls = total_overs * 6
+
     match = {
         'match_id':     raw.get('id', ''),
-        'tournament':   _detect_tournament(series) or series,
+        'tournament':   tournament,
         'series':       series,
         'status':       status,
         'team_a':       team_a,
@@ -389,6 +393,8 @@ def _parse_real_match(raw):
         'team_b':       team_b,
         'team_b_short': team_b_short,
         'venue':        raw.get('venue', ''),
+        'total_overs':  total_overs,
+        'total_balls':  total_balls,
         'is_mock':      False,
     }
 
@@ -437,10 +443,11 @@ def _parse_real_match(raw):
 
         # ── 2. PARSE SCORE DATA ──
         runs, wickets, overs, balls = _parse_score_string(score_str)
+        balls_left = max(total_balls - balls, 0)
         match.update({
             'score': runs, 'wickets': wickets, 'overs': overs, 'balls_bowled': balls,
             'crr': round((runs / balls * 6), 2) if balls > 0 else 0,
-            'rrr': round(((match['target'] - runs) / max(120 - balls, 1) * 6), 2) if match['target'] > 0 else 0,
+            'rrr': round(((match['target'] - runs) / max(balls_left, 1) * 6), 2) if match['target'] > 0 else 0,
             'commentary': raw.get('status', ''), 'ball_history': [], 'batting_players': [], 'bowling_players': []
         })
 
@@ -452,304 +459,30 @@ def _parse_real_match(raw):
     match['accent'] = get_match_accent(match)
 
     if match['status'] == 'live':
-        try:
-            from dashboard.algorithm import calculate_win_probability
-            prob = calculate_win_probability(
-                target=match.get('target', 0), runs=match['score'], 
-                wickets=match['wickets'], balls_bowled=match['balls_bowled'],
-                first_innings=(not match['target'])
-            )
-            match['batting_win_prob'], match['bowling_win_prob'] = prob['batting_team'], prob['bowling_team']
-        except:
-            match['batting_win_prob'], match['bowling_win_prob'] = 50.0, 50.0
-
-    return match
-    team_a_raw = raw.get('t1', '')
-    team_b_raw = raw.get('t2', '')
-    series     = raw.get('series', '')
-    ms         = raw.get('ms', '')       
-    t1s        = raw.get('t1s', '')      
-    t2s        = raw.get('t2s', '')
-
-    team_a       = _clean_team_name(team_a_raw)
-    team_b       = _clean_team_name(team_b_raw)
-    team_a_short = _clean_team_short(team_a_raw)
-    team_b_short = _clean_team_short(team_b_raw)
-
-    if ms == 'live':
-        status = 'live'
-    elif ms == 'result':
-        status = 'completed'
-    else:
-        status = 'upcoming'
-
-    match = {
-        'match_id':     raw.get('id', ''),
-        'tournament':   _detect_tournament(series) or series,
-        'series':       series,
-        'status':       status,
-        'team_a':       team_a,
-        'team_a_short': team_a_short,
-        'team_b':       team_b,
-        'team_b_short': team_b_short,
-        'venue':        '',
-        'is_mock':      False,
-    }
-
-    if status == 'live' or status == 'completed':
-        status_text = raw.get('status', '').lower()
-        team_a_lower = team_a.lower()
-        team_b_lower = team_b.lower()
-
-        # 1. Smarter Toss Detection
-        team_a_batted_first = any(phrase in status_text for phrase in [
-            f'{team_a_lower} opt to bat', f'{team_a_lower} elected to bat', f'{team_a_lower} chose to bat',
-            f'{team_b_lower} opt to bowl', f'{team_b_lower} elected to field', f'{team_b_lower} chose to field'
-        ])
-        team_b_batted_first = any(phrase in status_text for phrase in [
-            f'{team_b_lower} opt to bat', f'{team_b_lower} elected to bat', f'{team_b_lower} chose to bat',
-            f'{team_a_lower} opt to bowl', f'{team_a_lower} elected to field', f'{team_a_lower} chose to field'
-        ])
-
-        # Fallback if toss text is missing
-        if not team_a_batted_first and not team_b_batted_first:
-            team_a_batted_first = True 
-
-        # 2. Assign Scores Properly Based on Innings
-        if t1s and t2s:
-            # Second Innings
-            if team_a_batted_first:
-                # Team A batted first, so Team B is batting right now
-                match['team_batting'] = team_b
-                match['team_bowling'] = team_a
-                score_str  = t2s
-                target_str = t1s
-            else:
-                # Team B batted first, so Team A is batting right now
-                match['team_batting'] = team_a
-                match['team_bowling'] = team_b
-                score_str  = t1s
-                target_str = t2s
-
-            t_runs, _, _, _ = _parse_score_string(target_str)
-            match['target'] = t_runs + 1
-
-        elif t1s:
-            # First Innings (Only one score exists)
-            if team_b_batted_first:
-                match['team_batting'] = team_b
-                match['team_bowling'] = team_a
-            else:
-                match['team_batting'] = team_a
-                match['team_bowling'] = team_b
-            score_str       = t1s
-            match['target'] = 0
-
-        elif t2s:
-            if team_a_batted_first:
-                match['team_batting'] = team_a
-                match['team_bowling'] = team_b
-            else:
-                match['team_batting'] = team_b
-                match['team_bowling'] = team_a
-            score_str       = t2s
-            match['target'] = 0
-
+        if match.get('target', 0) > 0 and match.get('balls_bowled', 0) > 0:
+            try:
+                prob = calculate_win_probability(
+                    target=match['target'],
+                    runs=match['score'], 
+                    wickets=match['wickets'],
+                    balls_bowled=match['balls_bowled'],
+                    total_overs=total_overs,
+                    first_innings=False,
+                )
+                match['batting_win_prob'] = prob['batting_team']
+                match['bowling_win_prob'] = prob['bowling_team']
+            except Exception as e:
+                print(f"[API] Probability calculation failed: {e}")
+                match['batting_win_prob'] = 50.0
+                match['bowling_win_prob'] = 50.0
         else:
-            match['team_batting'] = team_a
-            match['team_bowling'] = team_b
-            score_str       = ''
-            match['target'] = 0
-
-        # Parse runs, wickets, and overs safely
-        runs, wickets, overs, balls = _parse_score_string(score_str)
-        match['score']        = runs
-        match['wickets']      = wickets
-        match['overs']        = overs
-        match['balls_bowled'] = balls
-        match['crr']          = round((runs / balls * 6), 2) if balls > 0 else 0
-        match['rrr']          = round(((match['target'] - runs) / max(120 - balls, 1) * 6), 2) if match['target'] > 0 else 0
-        match['commentary']       = raw.get('status', '')
-        match['ball_history']     = []
-        match['batting_players']  = []
-        match['bowling_players']  = []
-
-    # Safe logo extraction
-    match['team_a_logo'] = raw.get('t1img', '')
-    match['team_b_logo'] = raw.get('t2img', '')
-    
-    team_info = raw.get('teamInfo', [])
-    if isinstance(team_info, list):
-        logos = {ti.get('name', ''): ti.get('img', '') for ti in team_info}
-        if not match['team_a_logo']: match['team_a_logo'] = logos.get(team_a, '')
-        if not match['team_b_logo']: match['team_b_logo'] = logos.get(team_b, '')
-
-    # Apply Probability Algorithm safely
-    if match['status'] == 'live':
-        try:
-            from dashboard.algorithm import calculate_win_probability
-            is_first_innings = not match.get('target', 0)
-            prob = calculate_win_probability(
-                target=match.get('target', 0),
-                runs=match.get('score', 0),
-                wickets=match.get('wickets', 0),
-                balls_bowled=match.get('balls_bowled', 0),
-                first_innings=is_first_innings
-            )
-            match['batting_win_prob'] = prob['batting_team']
-            match['bowling_win_prob'] = prob['bowling_team']
-        except Exception as e:
-            print(f"[API] Probability calculation failed: {e}")
-            match['batting_win_prob'] = 50.0
-            match['bowling_win_prob'] = 50.0
+            match['batting_win_prob'] = None
+            match['bowling_win_prob'] = None
+            match['first_innings'] = True
     else:
         match['batting_win_prob'] = None
         match['bowling_win_prob'] = None
 
-    # Attach the red/blue/amber accent color!
-    match['accent'] = get_match_accent(match)
-
-    return match
-    """Parse a single match from real CricAPI response."""
-    team_a_raw = raw.get('t1', '')
-    team_b_raw = raw.get('t2', '')
-    series     = raw.get('series', '')
-    ms         = raw.get('ms', '')       # 'live', 'fixture', 'result'
-    t1s        = raw.get('t1s', '')      # team 1 score e.g. '28/0 (2.3)'
-    t2s        = raw.get('t2s', '')
-
-    team_a       = _clean_team_name(team_a_raw)
-    team_b       = _clean_team_name(team_b_raw)
-    team_a_short = _clean_team_short(team_a_raw)
-    team_b_short = _clean_team_short(team_b_raw)
-
-    # Map ms to our status
-    if ms == 'live':
-        status = 'live'
-    elif ms == 'result':
-        status = 'completed'
-    else:
-        status = 'upcoming'
-
-    match = {
-        'match_id':     raw.get('id', ''),
-        'tournament':   _detect_tournament(series) or series,
-        'series':       series,
-        'status':       status,
-        'team_a':       team_a,
-        'team_a_short': team_a_short,
-        'team_b':       team_b,
-        'team_b_short': team_b_short,
-        'venue':        '',
-        'is_mock':      False,
-    }
-
-    if status == 'live':
-        status_text = raw.get('status', '').lower()
-        team_a_lower = team_a.lower()
-        team_b_lower = team_b.lower()
-
-        # 1. Detect exactly who is batting from the toss text (Handles BOTH Bat & Bowl)
-        team_a_is_batting = any(phrase in status_text for phrase in [
-            f'{team_a_lower} opt to bat',
-            f'{team_a_lower} elected to bat',
-            f'{team_a_lower} chose to bat',
-            f'{team_b_lower} opt to bowl',
-            f'{team_b_lower} elected to field',
-            f'{team_b_lower} chose to field',
-        ])
-        
-        team_b_is_batting = any(phrase in status_text for phrase in [
-            f'{team_b_lower} opt to bat',
-            f'{team_b_lower} elected to bat',
-            f'{team_b_lower} chose to bat',
-            f'{team_a_lower} opt to bowl',
-            f'{team_a_lower} elected to field',
-            f'{team_a_lower} chose to field',
-        ])
-
-        # 2. Assign correctly based on innings
-        if t1s and t2s:
-            # Second Innings: The team batting is whoever DID NOT bat first
-            if team_a_is_batting:
-                match['team_batting'] = team_b
-                match['team_bowling'] = team_a
-            elif team_b_is_batting:
-                match['team_batting'] = team_a
-                match['team_bowling'] = team_b
-            else:
-                match['team_batting'] = team_b
-                match['team_bowling'] = team_a
-                
-            score_str  = t2s
-            target_str = t1s
-            t_runs, _, _, _ = _parse_score_string(target_str)
-            match['target'] = t_runs + 1
-
-        elif t1s:
-            # First Innings
-            if team_b_is_batting:
-                match['team_batting'] = team_b
-                match['team_bowling'] = team_a
-            else:
-                match['team_batting'] = team_a
-                match['team_bowling'] = team_b
-                
-            score_str       = t1s
-            match['target'] = 0
-
-        elif t2s:
-            # Rare API edge case where only t2 has a score
-            if team_a_is_batting:
-                match['team_batting'] = team_a
-                match['team_bowling'] = team_b
-            else:
-                match['team_batting'] = team_b
-                match['team_bowling'] = team_a
-                
-            score_str       = t2s
-            match['target'] = 0
-
-        else:
-            # Match about to start, no scores yet
-            match['team_batting'] = team_a
-            match['team_bowling'] = team_b
-            score_str       = ''
-            match['target'] = 0
-
-        # Grab logos
-        match['team_a_logo'] = raw.get('t1img', '')
-        match['team_b_logo'] = raw.get('t2img', '')
-
-        # Parse runs and calculate rates
-        runs, wickets, overs, balls = _parse_score_string(score_str)
-        match['score']        = runs
-        match['wickets']      = wickets
-        match['overs']        = overs
-        match['balls_bowled'] = balls
-        match['crr']          = round((runs / balls * 6), 2) if balls > 0 else 0
-        match['rrr']          = round(
-            ((match['target'] - runs) / max(120 - balls, 1) * 6), 2
-        ) if match['target'] > 0 else 0
-        match['commentary']       = raw.get('status', '')
-        match['ball_history']     = []
-        match['batting_players']  = []
-        match['bowling_players']  = []
-    
-    # Parse team logos from teamInfo
-    team_info = raw.get('teamInfo', [])
-    logos = {}
-    for ti in team_info:
-        logos[ti.get('name', '')] = ti.get('img', '')
-
-    match['team_a_logo'] = logos.get(team_a, '')
-    match['team_b_logo'] = logos.get(team_b, '')
-
-    # Also grab from top level t1img/t2img if available (cricScore response)
-    if not match['team_a_logo']:
-        match['team_a_logo'] = raw.get('t1img', '')
-    if not match['team_b_logo']:
-        match['team_b_logo'] = raw.get('t2img', '')
     return match
 
 
@@ -801,6 +534,27 @@ def get_all_matches(use_mock=False):
         completed = [m for m in MOCK_MATCHES if m["status"] == "completed"]
         for m in live + upcoming + completed:
             m["accent"] = get_match_accent(m)
+            total_overs = get_format_overs(m.get("tournament", ""))
+            m["total_overs"] = total_overs
+            m["total_balls"] = total_overs * 6
+            if m["status"] == "live" and m.get("target", 0) > 0 and m.get("balls_bowled", 0) > 0:
+                prob = calculate_win_probability(
+                    target=m["target"],
+                    runs=m["score"],
+                    wickets=m["wickets"],
+                    balls_bowled=m["balls_bowled"],
+                    total_overs=total_overs,
+                    first_innings=False,
+                )
+                m["batting_win_prob"] = prob["batting_team"]
+                m["bowling_win_prob"] = prob["bowling_team"]
+            elif m["status"] == "live":
+                m["batting_win_prob"] = None
+                m["bowling_win_prob"] = None
+                m["first_innings"] = True
+            else:
+                m["batting_win_prob"] = None
+                m["bowling_win_prob"] = None
         return {"live": live, "upcoming": upcoming, "completed": completed}
 
     data = _make_request("cricScore")
@@ -816,25 +570,6 @@ def get_all_matches(use_mock=False):
             continue
 
         match = _parse_real_match(raw)
-
-        # Attach win probability for live second innings
-        if match['status'] == 'live' and match.get('target', 0) > 0 and match.get('balls_bowled', 0) > 0:
-            try:
-                from dashboard.algorithm import calculate_win_probability
-                prob = calculate_win_probability(
-                    target=match['target'],
-                    runs=match['score'],
-                    wickets=match['wickets'],
-                    balls_bowled=match['balls_bowled'],
-                )
-                match['batting_win_prob'] = prob['batting_team']
-                match['bowling_win_prob'] = prob['bowling_team']
-            except Exception:
-                match['batting_win_prob'] = 50
-                match['bowling_win_prob'] = 50
-        else:
-            match['batting_win_prob'] = 50
-            match['bowling_win_prob'] = 50
 
         if match['status'] == 'live':
             live.append(match)
@@ -854,6 +589,9 @@ def get_match_by_id(match_id, use_mock=False):
     for match in MOCK_MATCHES:
         if match["match_id"] == match_id:
             match["accent"] = get_match_accent(match)
+            total_overs = get_format_overs(match.get("tournament", ""))
+            match["total_overs"] = total_overs
+            match["total_balls"] = total_overs * 6
             return match
 
     if use_mock:
@@ -939,29 +677,4 @@ MOCK_MATCH_DATA = MOCK_MATCHES[0]
 
 def get_live_match(use_mock=True):
     return MOCK_MATCH_DATA if use_mock else None
-
-
-def get_match_accent(match):
-    """
-    Returns the accent color key for a match.
-    Used by frontend to apply correct theme.
-    """
-    team_a = match.get("team_a", "")
-    team_b = match.get("team_b", "")
-    tournament = match.get("tournament", "")
-
-    # RCB check — red accent
-    if "Royal Challengers Bengaluru" in team_a or "Royal Challengers Bengaluru" in team_b:
-        return "red"
-
-    # IPL — amber
-    if tournament == TOURNAMENT_IPL:
-        return "amber"
-    
-    # India bilateral matches — blue
-    if tournament in [TOURNAMENT_INDIA_TEST, TOURNAMENT_INDIA_ODI, TOURNAMENT_INDIA_T20]:
-        return "blue"
-
-    # Everything else — purple
-    return "purple"
 

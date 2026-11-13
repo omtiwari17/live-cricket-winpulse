@@ -168,15 +168,30 @@ function updateScoreboard(data) {
   }
 }
 
+// ── Match Format Helpers ──────────────────────────────────────────────────────
+function getMatchTotalOvers(data) {
+  if (data && typeof data.total_overs === 'number' && data.total_overs > 0) {
+    return data.total_overs;
+  }
+  const text = `${data?.tournament || ''} ${data?.series || ''}`.toLowerCase();
+  if (text.includes('test') || text.includes('wtc')) return 90;
+  if (text.includes('odi') || text.includes('champions trophy') || (text.includes('world cup') && !text.includes('t20'))) {
+    return 50;
+  }
+  return 20;
+}
+
 // ── Stats ─────────────────────────────────────────────────────────────────────
 function updateStats(data) {
-  const balls     = data.balls_bowled || 0;
-  const score     = data.score        || 0;
-  const target    = data.target       || 0;
-  const crr       = data.crr          || 0;
-  const rrr       = data.rrr          || 0;
-  const ballsLeft = Math.max(0, 120 - balls);
-  const needed    = Math.max(0, target - score);
+  const balls      = data.balls_bowled || 0;
+  const score      = data.score        || 0;
+  const target     = data.target       || 0;
+  const crr        = data.crr          || 0;
+  const rrr        = data.rrr          || 0;
+  const totalOvers = getMatchTotalOvers(data);
+  const totalBalls = totalOvers * 6;
+  const ballsLeft  = Math.max(0, totalBalls - balls);
+  const needed     = Math.max(0, target - score);
 
   setText('stat-target', target > 0 ? target : '1st INN');
   setText('stat-needed', target > 0 ? needed  : '—');
@@ -187,12 +202,17 @@ function updateStats(data) {
   // RRR color
   const rrrEl = document.getElementById('stat-rrr');
   if (rrrEl && rrr > 0) {
-    rrrEl.className = 'stat-val ' + (rrr > 12 ? 'danger' : rrr > 9 ? 'warn' : 'good');
+    const dangerThreshold = totalOvers >= 50 ? 8 : 12;
+    const warnThreshold   = totalOvers >= 50 ? 6 : 9;
+    rrrEl.className = 'stat-val ' + (rrr > dangerThreshold ? 'danger' : rrr > warnThreshold ? 'warn' : 'good');
   }
 
   // CRR minibar
   const crrBar = document.getElementById('crr-bar');
-  if (crrBar) crrBar.style.width = `${Math.min(100, (crr / 12) * 100)}%`;
+  if (crrBar) {
+    const maxBarRate = totalOvers >= 50 ? 8 : 12;
+    crrBar.style.width = `${Math.min(100, (crr / maxBarRate) * 100)}%`;
+  }
 }
 
 // ── Over dots ─────────────────────────────────────────────────────────────────
@@ -203,8 +223,7 @@ function updateOverDots(data) {
   const container      = document.getElementById('over-dots');
   if (!container) return;
 
-  const isTest     = data.tournament && data.tournament.toLowerCase().includes('test');
-  const totalOvers = isTest ? 90 : 20;
+  const totalOvers = getMatchTotalOvers(data);
 
   container.innerHTML = '';
   for (let i = 0; i < totalOvers; i++) {
