@@ -1,4 +1,4 @@
-// ── WinPulse — list.js ──────────────────────────────────────────────────────
+// ── Death Overs — list.js ────────────────────────────────────────────────────
 'use strict';
 
 const API_URL       = '/api/matches/';
@@ -50,7 +50,7 @@ async function fetchAndRender() {
     allMatches = data;
     applyFiltersAndRender();
   } catch (err) {
-    console.error('[WinPulse] Fetch failed:', err);
+    console.error('[Death Overs] Fetch failed:', err);
     showError();
   } finally {
     scheduleNext();

@@ -1,4 +1,4 @@
-# WinPulse - Live Cricket Win Probability Dashboard
+# Death Overs - Live Cricket Win Probability Dashboard
 
 A real-time cricket dashboard built with Django. Shows live IPL and India match scores with a WASP-inspired win probability algorithm that updates as the match progresses.
 

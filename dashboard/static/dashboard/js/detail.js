@@ -1,4 +1,4 @@
-// ── WinPulse — detail.js ────────────────────────────────────────────────────
+// ── Death Overs — detail.js ──────────────────────────────────────────────────
 'use strict';
 
 const API_BASE      = '/api/match/';
@@ -15,7 +15,7 @@ let lastBalls       = -1;
 // ── Boot ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   if (typeof MATCH_ID === 'undefined' || !MATCH_ID) {
-    console.error('[WinPulse] No MATCH_ID found.');
+    console.error('[Death Overs] No MATCH_ID found.');
     return;
   }
   fetchAndUpdate();
@@ -29,7 +29,7 @@ async function fetchAndUpdate() {
     updateAll(data);
     scheduleNext(data);
   } catch (err) {
-    console.error('[WinPulse] Fetch failed:', err);
+    console.error('[Death Overs] Fetch failed:', err);
     scheduleNext(null);
   }
 }
