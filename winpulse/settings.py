@@ -65,7 +65,7 @@ DATABASES = {
 
 # Static files
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_ROOT = BASE_DIR / 'staticfiles_build' / 'static'
 
 # API Keys loaded from .env
 CRICKET_API_KEYS = [
